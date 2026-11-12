@@ -1,4 +1,4 @@
-# Roger Does Countdown — Solo Pocket v0.4 (GitHub Pages release candidate)
+# Roger Does Countdown — Solo Pocket v0.5 (Christmas-theme fix; GitHub Pages release candidate)
 
 This is the **public-safe** static-site version. It contains no personal Countdown MP3, credentials, passwords, certificates, or device-specific data. It is deliberately **separate** from Roger Does Countdown multiplayer.
 
@@ -28,3 +28,9 @@ This is the **public-safe** static-site version. It contains no personal Countdo
 ## Local test on a Mac (not an iPad offline acceptance test)
 
 `python3 -m http.server 8765` in this folder; open `http://localhost:8765/`. The game runs without the imported music until you select your own file from the local device.
+
+## Update from v0.4
+
+The **Christmas** dropdown now immediately changes the lobby background and shows the Christmas tree. The choice is remembered on this device. The versioned offline cache has been updated, so the new files can replace v0.4. If v0.4 is already installed, upload all new files to the **same** repository (do not remove the local MP3), keep the iPad online, visit the site's Safari address, refresh and then close/reopen the Home Screen app. On a cache-first PWA, the first visit may load the old version while the updated service worker installs; another reload/open can be needed. Check that the Christmas theme changes **before** starting a game.
+
+The Countdown MP3 is **not** included in this ZIP and must never be uploaded to GitHub; its locally imported copy is independent of the site update.
