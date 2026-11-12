@@ -1,8 +1,8 @@
 import {THINK_MS,BUZZ_ANSWER_MS,VOWELS,CONSONANTS,createPool,drawOne,chooseNumbers,shuffle,validWord,calculate,numberPoints,longestWords,prepareConundrums,numbersExpert} from './rules.mjs';
 const $=id=>document.getElementById(id); const screen=$('screen'), clockAudio=$('clock-audio'),winAudio=$('win-audio');
-const OFFLINE_CACHE='roger-solo-pocket-0.4.0';
-const OFFLINE_ASSETS=['./','./index.html','./style.css','./app.mjs','./rules.mjs','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/favicon.svg','./data/words.txt','./data/additions.txt','./data/conundrums.txt','./festive/tree.svg','./festive/reindeer.svg','./festive/snowglobe.svg','./festive/santa.svg','./festive/star.svg','./audio/victory_original.wav','./audio/victory_christmas_original.wav'];const savedName=(()=>{try{return localStorage.getItem('roger-pocket-name')}catch{return null}})();let words=new Set(),conundrums=[],soundURL=null;
-const state={name:savedName||'Player',theme:'classic',length:3,round:0,phase:'lobby',type:'',tiles:[],target:null,score:0,history:[],pools:{},answer:'',original:'',result:null,expert:null,conundrum:'',scramble:'',seconds:31,deadline:null,buzzUsed:false,responseDeadline:null,clockLeft:THINK_MS,clockStarted:false,celebration:false,notice:'',ready:false};
+const OFFLINE_CACHE='roger-solo-pocket-0.5.0';
+const OFFLINE_ASSETS=['./','./index.html','./style.css','./app.mjs','./rules.mjs','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/favicon.svg','./data/words.txt','./data/additions.txt','./data/conundrums.txt','./festive/tree.svg','./festive/reindeer.svg','./festive/snowglobe.svg','./festive/santa.svg','./festive/star.svg','./audio/victory_original.wav','./audio/victory_christmas_original.wav'];const savedName=(()=>{try{return localStorage.getItem('roger-pocket-name')}catch{return null}})();const savedTheme=(()=>{try{return localStorage.getItem('roger-pocket-theme')}catch{return null}})();let words=new Set(),conundrums=[],soundURL=null;
+const state={name:savedName||'Player',theme:savedTheme==='christmas'?'christmas':'classic',length:3,round:0,phase:'lobby',type:'',tiles:[],target:null,score:0,history:[],pools:{},answer:'',original:'',result:null,expert:null,conundrum:'',scramble:'',seconds:31,deadline:null,buzzUsed:false,responseDeadline:null,clockLeft:THINK_MS,clockStarted:false,celebration:false,notice:'',ready:false};
 const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const setNotice=m=>{state.notice=m;const n=$('notice');if(n)n.textContent=m||'';};
 const isFinal=()=>state.round===state.length+1;
@@ -16,6 +16,7 @@ const button=(action,text,cl='secondary')=>`<button type="button" data-action="$
 const dots=()=>`<div id="notice" role="status">${safe(state.notice)}</div>`;
 const controls=(items)=>`<div class="controls">${items.join('')}</div>`;
 function saveName(){try{localStorage.setItem('roger-pocket-name',state.name)}catch{}}
+function saveTheme(){try{localStorage.setItem('roger-pocket-theme',state.theme)}catch{}}
 function loadMedia(filename){const a=winAudio;a.src=filename; a.volume=.85}
 const audioChoice=()=>`<details class="details"><summary>Add Countdown music privately (optional)</summary><p class="hint">After adding this game to the Home Screen, open it from there and choose your own MP3 from Files. It is saved on this device only, never uploaded to GitHub or another server, and should not need importing again unless app data is cleared.</p><label class="file-button">Choose MP3 from Files <input id="song-input" type="file" accept="audio/mpeg,audio/mp3,audio/*"></label><p class="hint" id="song-info">${soundURL?'Personal music loaded':'No music imported — the clock runs silently'}</p></details>`;
 function draw(){document.body.classList.toggle('christmas',state.theme==='christmas');const themeText=state.theme==='christmas'?'Christmas':'Classic';const h=`<span class="pill">${themeText} · ${state.length===3?'Quick':state.length===6?'Short':state.length===9?'Medium':'Standard'}</span>`;
@@ -68,7 +69,7 @@ function draw(){document.body.classList.toggle('christmas',state.theme==='christ
  }
 }
 function resetPhase(){state.answer='';state.original='';state.result=null;state.expert=null;state.deadline=null;state.responseDeadline=null;state.clockLeft=THINK_MS;state.buzzUsed=false;state.notice='';state.celebration=false;}
-function startGame(){const input=$('your-name');state.name=(input?.value||'Sarah').trim().slice(0,24)||'Sarah';state.length=Number($('length')?.value||3);state.theme=$('theme')?.value||'classic';saveName();state.score=0;state.round=0;state.history=[];state.type='';startRound();}
+function startGame(){const input=$('your-name');state.name=(input?.value||'Sarah').trim().slice(0,24)||'Sarah';state.length=Number($('length')?.value||3);state.theme=$('theme')?.value||'classic';saveName();saveTheme();state.score=0;state.round=0;state.history=[];state.type='';startRound();}
 function startRound(){resetPhase();state.round++;state.type=typeFor(state.round);if(state.type==='Letters'){state.phase='select';state.tiles=[];state.pools={vowel:createPool(VOWELS),consonant:createPool(CONSONANTS)};}
  else if(state.type==='Numbers'){state.tiles=[];state.target=null;state.phase='select'}else{state.conundrum=conundrums[Math.floor(Math.random()*conundrums.length)];state.scramble=shuffle([...state.conundrum.toUpperCase()]).join('');if(state.scramble.toLowerCase()===state.conundrum)state.scramble=state.scramble.split('').reverse().join('');state.phase='conundrum_buzz';startCountdown()}
  draw();}
@@ -93,7 +94,15 @@ function winSound(){winAudio.src=state.theme==='christmas'?'audio/victory_christ
 async function db(){return new Promise((resolve,reject)=>{const request=indexedDB.open('roger-solo-pocket-audio',1);request.onupgradeneeded=()=>request.result.createObjectStore('media');request.onerror=()=>reject(request.error);request.onsuccess=()=>resolve(request.result)})}
 async function loadSavedSong(){try{const database=await db();const blob=await new Promise((resolve,reject)=>{const req=database.transaction('media').objectStore('media').get('clock');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});database.close();if(blob)soundURL=URL.createObjectURL(blob);}catch(e){console.warn('Personal audio storage unavailable',e)}}
 async function saveSong(blob){const database=await db();await new Promise((resolve,reject)=>{const tx=database.transaction('media','readwrite');tx.objectStore('media').put(blob,'clock');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)});database.close();if(soundURL)URL.revokeObjectURL(soundURL);soundURL=URL.createObjectURL(blob);clockAudio.src=soundURL;clockAudio.load()}
-screen.addEventListener('change',async e=>{if(e.target.id==='song-input'){const file=e.target.files?.[0];if(file){try{await saveSong(file);const info=$('song-info');if(info)info.textContent=`Saved locally: ${file.name}`;}catch(err){setNotice('Could not save audio on this device: '+err.message)}}}});
+screen.addEventListener('change',async e=>{
+ if(e.target.id==='theme'){
+  // Apply the visual theme in the lobby immediately; preserve unfinished form input.
+  state.name=$('your-name')?.value||state.name;
+  state.length=Number($('length')?.value||state.length);
+  state.theme=e.target.value==='christmas'?'christmas':'classic';
+  saveTheme();draw();return;
+ }
+ if(e.target.id==='song-input'){const file=e.target.files?.[0];if(file){try{await saveSong(file);const info=$('song-info');if(info)info.textContent=`Saved locally: ${file.name}`;}catch(err){setNotice('Could not save audio on this device: '+err.message)}}}});
 screen.addEventListener('click',e=>{const btn=e.target.closest('[data-action]');if(!btn)return;let action=btn.dataset.action;try{
  switch(action){case 'start':startGame();break;case 'vowel':case 'consonant':state.tiles.push(drawOne(state.pools[action]));if(state.tiles.length===9){state.phase='thinking';startCountdown()}draw();break;
  case 'big-0':case 'big-1':case 'big-2':case 'big-3':case 'big-4':state.tiles=chooseNumbers(Number(action.split('-')[1]));state.target=100+Math.floor(Math.random()*900);state.phase='thinking';startCountdown();draw();break;
