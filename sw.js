@@ -1,0 +1,6 @@
+/* All Solo Pocket game code and word lists are saved for offline operation. */
+const CACHE='roger-solo-pocket-0.4.0';
+const ASSETS=['./','./index.html','./style.css','./app.mjs','./rules.mjs','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/favicon.svg','./data/words.txt','./data/additions.txt','./data/conundrums.txt','./festive/tree.svg','./festive/reindeer.svg','./festive/snowglobe.svg','./festive/santa.svg','./festive/star.svg','./audio/victory_original.wav','./audio/victory_christmas_original.wav'];
+self.addEventListener('install',event=>event.waitUntil((async()=>{const cache=await caches.open(CACHE);await cache.addAll(ASSETS);await self.skipWaiting()})()));
+self.addEventListener('activate',event=>event.waitUntil((async()=>{for(const name of await caches.keys())if(name!==CACHE && name.startsWith('roger-solo-pocket-'))await caches.delete(name);await self.clients.claim()})()));
+self.addEventListener('fetch',event=>{if(event.request.method!=='GET')return;const url=new URL(event.request.url);if(url.origin!==self.location.origin)return;event.respondWith((async()=>{const cached=await caches.match(event.request);if(cached)return cached;try{return await fetch(event.request)}catch(err){if(event.request.mode==='navigate')return (await caches.match('./index.html'))||Response.error();throw err}})())});
