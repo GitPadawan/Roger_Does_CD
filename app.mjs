@@ -1,6 +1,6 @@
 import {THINK_MS,BUZZ_ANSWER_MS,VOWELS,CONSONANTS,createPool,drawOne,chooseNumbers,shuffle,validWord,lettersFrom,calculate,numberPoints,longestWords,prepareConundrums,numbersExpert} from './rules.mjs';
 const $=id=>document.getElementById(id); const screen=$('screen'), clockAudio=$('clock-audio'),winAudio=$('win-audio');
-const OFFLINE_CACHE='roger-solo-pocket-0.6.0';
+const OFFLINE_CACHE='roger-solo-pocket-0.7.0';
 const OFFLINE_ASSETS=['./','./index.html','./style.css','./app.mjs','./rules.mjs','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/favicon.svg','./data/words.txt','./data/additions.txt','./data/conundrums.txt','./festive/tree.svg','./festive/reindeer.svg','./festive/snowglobe.svg','./festive/santa.svg','./festive/star.svg','./audio/victory_original.wav','./audio/victory_christmas_original.wav'];const savedName=(()=>{try{return localStorage.getItem('roger-pocket-name')}catch{return null}})();const savedTheme=(()=>{try{return localStorage.getItem('roger-pocket-theme')}catch{return null}})();let words=new Set(),conundrums=[],soundURL=null;
 const HISTORY_KEY='roger-pocket-history-v1',CUSTOM_WORDS_KEY='roger-pocket-approved-words-v1';
 const LENGTH_NAMES={3:'Quick',6:'Short',9:'Medium',12:'Standard'};
@@ -33,15 +33,24 @@ const dots=()=>`<div id="notice" role="status">${safe(state.notice)}</div>`;
 const controls=(items)=>`<div class="controls">${items.join('')}</div>`;
 const localDate=iso=>{try{return new Date(iso).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}catch{return iso}};
 function historyPanel(){
- const games=getGames(state.theme,state.length),best=games.length?Math.max(...games.map(g=>g.score)):null;
- const recent=games.slice(0,12).map(g=>`<div class="history-entry"><span>${safe(localDate(g.date))}<small>${safe(g.name||'Player')}</small></span><strong>${g.score} pts</strong></div>`).join('');
- const variants=['classic','christmas'].flatMap(theme=>[3,6,9,12].map(length=>{const gs=getGames(theme,length),top=gs.length?Math.max(...gs.map(g=>g.score)):'—';return `<div class="history-entry"><span>${theme==='classic'?'Classic':'Christmas'} · ${LENGTH_NAMES[length]}</span><strong>${gs.length} played · Best ${top}</strong></div>`})).join('');
- return `<details class="details history-panel"><summary>Solo history · ${state.theme==='christmas'?'Christmas':'Classic'} ${LENGTH_NAMES[state.length]}</summary>
- <p class="hint">Saved on this device only; nothing is uploaded. ${games.length?`${games.length} completed · Personal best ${best} · Latest ${games[0].score}`:'No completed games in this category yet.'}</p>
- ${recent||'<p class="hint">Complete a game to record your first score.</p>'}
- <details class="details"><summary>All 8 variants (4 lengths × 2 themes)</summary>${variants}</details></details>`;
+ // Show one combined history regardless of the game length or theme chosen in the lobby.
+ // Keep the existing per-theme/per-length storage keys so all v0.6 scores are preserved.
+ const groups=['classic','christmas'].flatMap(theme=>[3,6,9,12].map(length=>({theme,length,games:getGames(theme,length)})));
+ const gameCount=groups.reduce((sum,group)=>sum+group.games.length,0);
+ const variants=groups.map(({theme,length,games})=>{
+  const best=games.length?`${Math.max(...games.map(g=>g.score))} pts`:'—';
+  const label=`${theme==='classic'?'Classic':'Christmas'} · ${LENGTH_NAMES[length]}`;
+  return `<div class="history-entry"><span>${label}</span><strong>${games.length} played · Best ${best}</strong></div>`;
+ }).join('');
+ const recent=groups.flatMap(({theme,length,games})=>games.map(game=>({...game,theme,length})))
+  .sort((a,b)=>Date.parse(b.date)-Date.parse(a.date)).slice(0,12)
+  .map(g=>`<div class="history-entry"><span>${safe(localDate(g.date))}<small>${safe(g.name||'Player')} · ${g.theme==='classic'?'Classic':'Christmas'} · ${LENGTH_NAMES[g.length]}</small></span><strong>${g.score} pts</strong></div>`).join('');
+ return `<details class="details history-panel"><summary>Best Score &amp; History</summary>
+  <p class="hint">${gameCount} completed ${gameCount===1?'game':'games'} across all eight formats. Saved on this device only.</p>
+  <details class="details" open><summary>Games Played and Best Score</summary>${variants}</details>
+  <details class="details"><summary>Recent games</summary>${recent||'<p class="hint">Complete a game to record your first result.</p>'}</details>
+ </details>`;
 }
-function cachePanel(){return `<details class="details"><summary>Offline installation status</summary><p class="hint" id="cache-status">${safe(state.cacheStatus)}</p></details>`}
 function updateVerdict(next){
  const previous=state.result.points;
  state.result=next;
@@ -79,7 +88,7 @@ function draw(){document.body.classList.toggle('christmas',state.theme==='christ
  <div class="settings"><div class="full"><label for="your-name">Your name</label><input type="text" id="your-name" maxlength="24" value="${safe(state.name)}" autocomplete="nickname"></div>
  <div><label for="length">Game length</label><select id="length"><option value="3" ${state.length===3?'selected':''}>Quick — 3 + Conundrum</option><option value="6" ${state.length===6?'selected':''}>Short — 6 + Conundrum</option><option value="9" ${state.length===9?'selected':''}>Medium — 9 + Conundrum</option><option value="12" ${state.length===12?'selected':''}>Standard — 12 + Conundrum</option></select></div>
  <div><label for="theme">Studio theme</label><select id="theme"><option value="classic" ${state.theme==='classic'?'selected':''}>Classic</option><option value="christmas" ${state.theme==='christmas'?'selected':''}>Christmas</option></select></div></div>
- ${controls([button('start','Start Solo Challenge','primary')])}${historyPanel()}${audioChoice()}${cachePanel()}${dots()}`);
+ ${controls([button('start','Start Solo Challenge','primary')])}${historyPanel()}${audioChoice()}${dots()}`);
  return;
  }
  const eyebrow=`ROUND ${state.round} OF ${state.length+1} · ${state.type.toUpperCase()}`;
