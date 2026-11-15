@@ -99,3 +99,7 @@ towards
 backwards
 gaits
 cush
+sinuate
+sinuates
+sinuated
+sinuating

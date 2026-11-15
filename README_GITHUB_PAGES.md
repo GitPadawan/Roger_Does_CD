@@ -1,4 +1,4 @@
-# Roger Does Countdown — Solo Pocket v0.5 (Christmas-theme fix; GitHub Pages release candidate)
+# Roger Does Countdown — Solo Pocket v0.6 (safe-area, dictionary, verdict reviews and device histories)
 
 This is the **public-safe** static-site version. It contains no personal Countdown MP3, credentials, passwords, certificates, or device-specific data. It is deliberately **separate** from Roger Does Countdown multiplayer.
 
@@ -34,3 +34,15 @@ This is the **public-safe** static-site version. It contains no personal Countdo
 The **Christmas** dropdown now immediately changes the lobby background and shows the Christmas tree. The choice is remembered on this device. The versioned offline cache has been updated, so the new files can replace v0.4. If v0.4 is already installed, upload all new files to the **same** repository (do not remove the local MP3), keep the iPad online, visit the site's Safari address, refresh and then close/reopen the Home Screen app. On a cache-first PWA, the first visit may load the old version while the updated service worker installs; another reload/open can be needed. Check that the Christmas theme changes **before** starting a game.
 
 The Countdown MP3 is **not** included in this ZIP and must never be uploaded to GitHub; its locally imported copy is independent of the site update.
+
+## Changes in v0.6
+
+- iPhone/iPad Home Screen safe-area inset keeps the title below the time, signal and battery indicators, including Christmas mode.
+- Added validated **SINUATED** (and inflections of SINUATE) to the built-in dictionary. SINUATED earns 8 points with the correct letter tiles.
+- Results now have **Review or correct this verdict**. Recheck corrected answers, approve a legitimate unlisted word (confirmed twice and only if the tiles are possible), or manually override a mistaken score using a confirmation dialogue. Approved words are saved locally.
+- Completed results are saved locally, separately across **Quick/Short/Medium/Standard × Classic/Christmas** (eight histories, last 50 games each). The game lobby provides statistics for the selected combination and all variants; the final score screen also shows history. Only completed games are saved. Device/app storage removal erases these histories, and they do not synchronise across phones.
+- Removed the redundant always-visible footer. Offline installation status is now under a collapsible option in the lobby.
+- Updated the service worker cache to `roger-solo-pocket-0.6.0`. After uploading the changed files to the existing repository, refresh the published web page *while online* and reopen the Home Screen app (occasionally twice) to activate updated caching. Personal MP3 imports remain local and are unaffected by ordinary site-file updates, provided you do not clear website data.
+- **Do not upload personal recordings, private-install packages or credentials to GitHub.** Only this public-safe edition is intended for the repository.
+
+**Acceptance tests still needed on the real iPad/iPhone:** Safari Home Screen safe-area layout, updating the service worker from the installed v0.5, word approvals and history persistence after closing/reopening and in Airplane Mode.
